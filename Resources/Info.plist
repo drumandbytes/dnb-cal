@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>DnbCal</string>
+    <key>CFBundleIdentifier</key>
+    <string>dev.drumandbytes.dnbcal</string>
+    <key>CFBundleName</key>
+    <string>DnbCal</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>0.0.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>DnbCal reads your calendar events when a script or app of yours asks it to, for example a bar or panel that lists them.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>DnbCal reads your calendar events when a script or app of yours asks it to, for example a bar or panel that lists them.</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright drumandbytes. MIT License.</string>
+</dict>
+</plist>
