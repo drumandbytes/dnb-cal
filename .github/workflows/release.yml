@@ -16,37 +16,21 @@ jobs:
         with:
           persist-credentials: true  # this workflow pushes with the checkout's credentials
 
-      - name: Derive version
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
       - name: Build and sign
-        run: scripts/build-app.sh "${{ steps.version.outputs.version }}"
+        run: scripts/build-app.sh "${GITHUB_REF_NAME#v}"
 
       - name: Zip app
         id: zip
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           cd build
           zip -ry "DnbCal-${VERSION}.zip" DnbCal.app
           echo "sha256=$(shasum -a 256 "DnbCal-${VERSION}.zip" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-      - name: Create or update GitHub release
+      - name: Attach to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          ASSET="build/DnbCal-${VERSION}.zip"
-          TAG="$GITHUB_REF_NAME"
-
-          # release-please already created this tag's release; attach to it.
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$ASSET"
-          else
-            gh release create "$TAG" "$ASSET" --title "$TAG" --generate-notes
-          fi
+        run: gh release upload "$GITHUB_REF_NAME" "build/DnbCal-${GITHUB_REF_NAME#v}.zip"
 
       # dnb-robot, scoped to this repo and homebrew-tap; GITHUB_TOKEN can't
       # write to another repo.
@@ -64,7 +48,7 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${GITHUB_REF_NAME#v}"
           SHA="${{ steps.zip.outputs.sha256 }}"
 
           git clone "https://x-access-token:${GH_TOKEN}@github.com/drumandbytes/homebrew-tap.git" /tmp/homebrew-tap

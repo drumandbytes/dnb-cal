@@ -9,7 +9,7 @@ access per app, so a plain CLI run by Hammerspoon/SketchyBar/launchd could never
 ## Build & Test
 
 ```bash
-swift build && swift test         # DnbCalCore (args, output format) is unit-tested
+swift build && swift test         # the output format is unit-tested
 scripts/build-app.sh [version]    # build/DnbCal.app, ad-hoc signed
 ```
 
@@ -21,6 +21,6 @@ scripts/build-app.sh [version]    # build/DnbCal.app, ad-hoc signed
 
 ## Non-obvious pitfalls
 
-- The calendar access prompt can't be tested in CI; the code path that asks for it (`Sources/DnbCal/main.swift`) is deliberately tiny, everything testable lives in `DnbCalCore`.
+- The calendar access prompt can't be tested in CI; the code path that asks for it (`Sources/DnbCal/main.swift`) is deliberately tiny, the formatting lives in `Render.swift`, which is unit-tested.
 - `open -W` can't reliably wait for this app (it exits in milliseconds); consumers poll for the output file, which is written atomically.
 - **Release flow**: tag push → `release.yml` builds, ad-hoc signs, zips, attaches to the release release-please created, then bumps `Casks/dnb-cal.rb` in `drumandbytes/homebrew-tap` as `dnb-robot`. The cask must already exist in the tap.
