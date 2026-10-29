@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true  # this workflow pushes with the checkout's credentials
+
+      - name: Derive version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and sign
+        run: scripts/build-app.sh "${{ steps.version.outputs.version }}"
+
+      - name: Zip app
+        id: zip
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd build
+          zip -ry "DnbCal-${VERSION}.zip" DnbCal.app
+          echo "sha256=$(shasum -a 256 "DnbCal-${VERSION}.zip" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          ASSET="build/DnbCal-${VERSION}.zip"
+          TAG="$GITHUB_REF_NAME"
+
+          # release-please already created this tag's release; attach to it.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET"
+          else
+            gh release create "$TAG" "$ASSET" --title "$TAG" --generate-notes
+          fi
+
+      # dnb-robot, scoped to this repo and homebrew-tap; GITHUB_TOKEN can't
+      # write to another repo.
+      - uses: actions/create-github-app-token@v3
+        id: app_token
+        with:
+          client-id: ${{ secrets.DNB_ROBOT_CLIENT_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+          permission-contents: write
+          owner: drumandbytes
+          repositories: dnb-cal,homebrew-tap
+
+      - name: Update cask in homebrew-tap
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA="${{ steps.zip.outputs.sha256 }}"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/drumandbytes/homebrew-tap.git" /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          CASK_FILE="Casks/dnb-cal.rb"
+          sed -i '' -E "s/(version \")[^\"]+(\")/\1${VERSION}\2/" "$CASK_FILE"
+          sed -i '' -E "s/(sha256 \")[^\"]+(\")/\1${SHA}\2/" "$CASK_FILE"
+
+          git config user.name "dnb-robot[bot]"
+          git config user.email "4773076+dnb-robot[bot]@users.noreply.github.com"
+          git add "$CASK_FILE"
+          git commit -m "chore(cask): bump dnb-cal to ${VERSION}"
+          git push
