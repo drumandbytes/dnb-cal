@@ -13,9 +13,10 @@ echo "Building ${APP_NAME} ${VERSION}..."
 swift build -c release
 
 rm -rf "$BUNDLE"
-mkdir -p "$BUNDLE/Contents/MacOS"
+mkdir -p "$BUNDLE/Contents/MacOS" "$BUNDLE/Contents/Resources"
 
 cp ".build/release/${APP_NAME}" "$BUNDLE/Contents/MacOS/${APP_NAME}"
+cp Resources/AppIcon.icns "$BUNDLE/Contents/Resources/"
 
 PLIST="$BUNDLE/Contents/Info.plist"
 cp Resources/Info.plist "$PLIST"
