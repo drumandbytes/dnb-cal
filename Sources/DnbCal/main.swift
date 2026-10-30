@@ -23,7 +23,12 @@ func write(_ text: String) {
 let store = EKEventStore()
 let answered = DispatchSemaphore(value: 0)
 var granted = false
-store.requestAccess(to: .event) { ok, _ in granted = ok; answered.signal() }
+// macOS 14 split calendar access in two: the old call no longer shows a prompt there
+if #available(macOS 14, *) {
+    store.requestFullAccessToEvents { ok, _ in granted = ok; answered.signal() }
+} else {
+    store.requestAccess(to: .event) { ok, _ in granted = ok; answered.signal() }
+}
 answered.wait()
 
 guard granted else {
